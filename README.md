@@ -1,6 +1,8 @@
 # Dow Jones Investigation 
 An investment strategy called 'Sell in May and go away' is based on the hypothesis that stock market prices perform weaker between May and October than during all other months. This project will investigate and test whether there are monthly differences using the Dow Jones Industrial Average as an indicator of stock market trends (starting from 1896). However, this project will be focusing more on data wrangling than high-level statistics. 
 
+The data used was obtained from this website: https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/?go=industrial-index-data#overview.
+
 For easy access to dow_jones.html, click on this link: https://kellyngsf.github.io/dow_jones/dow_jones.html.
 
 # Findings
