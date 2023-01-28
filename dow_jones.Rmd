@@ -161,6 +161,6 @@ kruskal.test(rel_change_pct ~ month, data = dj)
 
 We take the confidence level as 95% (0.95). Therefore, for the null hypothesis to be rejected, the p-value should be lesser than 0.05. 
 
-In the above test, the The p-value is lesser than 0.05. Therefore, at the 95% confidence level, we reject the null hypothesis that the relative changes come from the same distribution in all months. We accept the alternate hypothesis that there is a difference in distribution of the relative changes in at least one of the months. In other words, at least one other month's relative change has a different distribution than the rest of months.
+In the above test, the p-value is lesser than 0.05. Therefore, at the 95% confidence level, we reject the null hypothesis that the relative changes come from the same distribution in all months. We accept the alternate hypothesis that there is a difference in distribution of the relative changes in at least one of the months. In other words, at least one other month's relative change has a different distribution than the rest of months. 
 
-The test does not reveal what months have a different distribution.
+The best time to buy appears to be at the end of September and the best time to sell is at the end of December based on this data. Therefore, this simple analysis brings doubt on whether the 'Sell in May and go away' investment strategy is optimal or not. 
