@@ -1,0 +1,166 @@
+---
+title: "Dow Jones Investigation"
+author: "Kelly Ng"
+date: "2/13/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.align = 'center')
+```
+
+'Sell in May and go away' is an investment strategy based on the hypothesis that stock market prices perform weaker between May and October than during other months. In this project, we will test whether there are monthly differences using the Dow Jones Industrial Average as an indicator of stock market trends since 1896. The focus of this project will be on data wrangling. We will use data from S&P Global. 
+
+The following packages are needed for this project:
+```{r}
+library(readxl)
+library(dplyr)
+library(tibble)
+library(lubridate)
+library(tidyverse)
+library(XLConnect)
+```
+
+### 1. Importing data. 
+```{r}
+dj <- loadWorkbook("dja-performance-report-monthly.xls")
+dj <- readWorksheet(dj, 1, startRow = 6, header = T)
+dj <- as_tibble(dj)
+
+# Removing the final few empty rows
+dj <- dj[-(nrow(dj):(nrow(dj) - 4)), ]
+```
+
+### 2. Removing all columns except `Effective Date` and `Close Value`,
+```{r}
+dj <- dj[, 2:3]
+```
+
+### 3. Changing the names of the columns to `date` and `close_value`. 
+We do this to remove the spaces in the column names, which would otherwise be awkward to view in R. 
+```{r}
+colnames(dj) <- c("date", "close_value")
+```
+
+### 4. Checking the R classes of the columns. 
+```{r}
+# Glimpse provides structural information on the data
+glimpse(dj)
+```
+- `date` is character class.
+- `close_value` is double or numeric class.
+
+### 5. Appending a column called `month` with the month that is implicit in the `date` column. 
+```{r}
+dj$month <- mdy(dj$date) |> month()
+```
+
+### 6. Checking if all the months in `dj` are in consecutive calendrical order. 
+```{r}
+dj$next_month <- lead(dj$month, n = 1L)
+
+consecutive <- if_else(dj$month < 12,
+  dj$month + 1 == dj$next_month,
+  dj$next_month == 1
+)
+all(consecutive)
+```
+
+### 7. Finding the date just before the gap. 
+Since the months are not in consecutive calendrical order (found in 6), I will investigate where this gap is and why there is a gap. 
+```{r}
+dj$date[!consecutive]
+```
+07/30/1914 is the date of day before NYSE shut down in 1914. In response to the World War 1 breaking out, the NYSE was closed on 07/31/1914 because the US government did not want foreign investors to liquidate their securities to fund the war efforts in their countries. Such liquidation would have been detrimental to the American economy. Among other reasons, the price of securities would have fell and Americans would have lost portions of their investment. 
+
+Hence, to prevent such liquidation and consequential detriment to the American economy, the government decided to close the NYSE. The NYSE opened again on November 1914 for bonds trading, and in December 1914 for stock trading.
+
+This answer was facilitated by the following article: 
+<https://www.history.com/this-day-in-history/new-york-stock-exchange-resumes-bond-trading>
+(accessed on 13 July 2022).
+
+### 8. Creating a column for the relative percentage change of the Dow Jones compared to its value at the start of the month. 
+```{r}
+dj$rel_change_pct <- (
+  (dj$close_value - lag(dj$close_value, n = 1L))
+  / lag(dj$close_value, n = 1L)) * 100
+```
+
+### 9. Making a quick-and-dirty plot of the Dow Jones' relative change as a function of time. 
+```{r, fig.width = 8, fig.height = 4, out.width = '70%'}
+# Remove first row because it contains NA
+ggplot(dj[-1, ], aes(mdy(date), rel_change_pct)) +
+  geom_line()
+```
+
+### 10. Finding the month with the largest relative increase in the history of Dow Jones and why. 
+```{r}
+max(dj$rel_change_pct, na.rm = TRUE)
+    
+# Subsetting to find the exact date of highest increase
+dj$date[dj$rel_change_pct == max(dj$rel_change_pct, na.rm = TRUE)]
+```
+04/29/1933 saw the largest increase in the history of Dow Jones.
+
+This happened because when Franklin Roosevelt took office as President in March 1933, he announced the New Deal which would bring significant banking and economic reforms. The New Deal and related economic reforms like the Emergency Banking Relief Act of 1933 were introduced to help the economy recover from the Great Depression and the 1929 wall street crash.
+
+The economy did begin to recover in early 1933. This brought about improved confidence in the markets. Thus, financial markets started recovery in April 1933, which led to the largest increase in the history of Dow Jones
+in April 1933.
+
+This answer were facilitated by the following sources:
+
+- Professor John Driffill (Economics faculty at Yale-NUS College).
+
+- <https://livingnewdeal.org/what-was-the-new-deal/timeline/> (accessed on
+14 July 2022).
+
+- <https://www.history.com/topics/great-depression/1929-stock-market-crash>
+(accessed on 14 July 2022).
+
+
+### 11. Making a column `month_abb` that contains the abbreviated name of the month as a factor (e.g., "Jan", "Feb", etc.). 
+```{r}
+dj$month_abb <- as_factor(dj$month)
+
+# Converting the levels to month abbreviations
+levels(dj$month_abb) <- levels(as_factor(month.abb))
+
+levels(dj$month_abb)
+class(dj$month_abb)
+```
+
+### 12. Making a quick-and-dirty box plot of relative change as a function of month. 
+```{r, fig.width = 6, fig.height = 5, out.width = '60%'}
+ggplot(dj[-1, ], aes(month_abb, rel_change_pct)) +
+  geom_boxplot()
+```
+
+- The median real change percentages are fairly consistent across all month
+at about ~0-2%.
+- There is not much skewness present in individual months.
+- The month of April has a large outlier at around 40% `rel_change_pct`.
+- The ranges of the months (signified by the whiskers) appear to be
+fairly consistent throughout.
+- October has several outliers in only negative `rel_change_pct`.
+
+### 13. Finding the month that has the highest and lowest median relative change. 
+```{r}
+aggregate(
+  dj$rel_change_pct, list(dj$month_abb), median,
+  na.rm = TRUE
+)
+```
+
+- July has the highest median relative change in percentage.
+- September has the lowest median relative change in percentage.
+
+### 14. Seeing if the differences in the median between different months are statistically significant. 
+```{r}
+kruskal.test(rel_change_pct ~ month, data = dj)
+```
+
+We take the confidence level as 95% (0.95). Therefore, for the null hypothesis to be rejected, the p-value should be lesser than 0.05. 
+
+In the above test, the The p-value is lesser than 0.05. Therefore, at the 95% confidence level, we reject the null hypothesis that the relative changes come from the same distribution in all months. We accept the alternate hypothesis that there is a difference in distribution of the relative changes in at least one of the months. In other words, at least one other month's relative change has a different distribution than the rest of months.
+
+The test does not reveal what months have a different distribution.
